@@ -17,6 +17,34 @@ class MadukaType(DjangoObjectType):
 #     name: String
 # }
 
+#code for deleting objects
+class DeleteFrank(graphene.Mutation):
+    dfrank = graphene.Field(FrankType)
+
+    class Arguments:
+        id = graphene.ID()
+
+    @classmethod
+    def mutate(cls,root, info,id):
+        dfrank = Frank.objects.get(id=id)
+        dfrank.delete()
+        return DeleteFrank(dfrank=dfrank)
+
+#updating data usinng mutations..
+class UpdateFrank(graphene.Mutation):
+    ufrank = graphene.Field(FrankType)
+
+    class Arguments:
+        id = graphene.ID()
+        name = graphene.String(required=True)
+
+    @classmethod
+    def mutate(cls,root,info,id,name):
+        ufrank = Frank.objects.get(id=id)
+        ufrank.name = name
+        ufrank.save()
+        return UpdateFrank(ufrank=ufrank)
+
 #a mutation class for creating new instance of frank
 class CreateFrank(graphene.Mutation):
     frank = graphene.Field(FrankType)
@@ -38,7 +66,8 @@ class CreateMaduka(graphene.Mutation):
         notes = graphene.String()
         frank_id = graphene.Int()
 
-    def mutate(self, info, name,notes,frank_id):
+    @classmethod
+    def mutate(cls, self, info, name,notes,frank_id):
         datac = Maduka(name=name,notes=notes)
         data = Frank.objects.get(id=frank_id)
         datac.frank = data
@@ -50,6 +79,8 @@ class CreateMaduka(graphene.Mutation):
 class Mutation(graphene.ObjectType):
     create_maduka = CreateMaduka.Field()
     create_frank = CreateFrank.Field()
+    update_ufrank = UpdateFrank.Field()
+    delete_dfrank = DeleteFrank.Field()
 
 
 #a class for data querying from our related models...
@@ -57,11 +88,15 @@ class Query(graphene.ObjectType):
 
     all_frank = graphene.List(FrankType)
     all_maduka = graphene.List(MadukaType)
+    specific_frank=graphene.List(FrankType,id=graphene.Int())
 
     def resolve_all_frank(root, info):
         return Frank.objects.all()
 
     def resolve_all_maduka(root, info):
         return Maduka.objects.all()
+
+    def resolve_specific_frank(root, info,id):
+        return Frank.objects.filter(id=id)
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
